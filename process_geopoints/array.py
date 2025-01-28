@@ -19,39 +19,56 @@ def find_closest_point(start, options):
 def clean_coordinate(value):
     """
     Cleans and converts a coordinate (latitude or longitude) from various formats:
-    - Supports Decimal Degrees (DD) → "40.7128 N" → 40.7128
-    - Supports Degrees and Minutes (DM) → "34°03' N" → 34.05
-    - Supports Degrees, Minutes, and Seconds (DMS) → "34°03'30\" N" → 34.0583
+    - Decimal Degrees (DD): "40.7128 N" → 40.7128
+    - Degrees and Minutes (DM): "34°03' N" → 34.05
+    - Degrees, Minutes, and Seconds (DMS): "34°03'30\" N" → 34.0583
     """
     if not isinstance(value, str):
         return None
 
     value = value.strip().upper()
 
-    # Determine multiplier for direction
+    # Determine multiplier for direction (N/E = positive, S/W = negative)
     multiplier = -1 if 'S' in value or 'W' in value else 1
 
-    # Remove all non-numeric characters except '.', '-', '°', "'", and '"'
+    # Ensure only valid characters are present
     cleaned_value = re.sub(r"[^0-9.\-°'\"]", " ", value).strip()
 
-    # Check for Degrees, Minutes, Seconds (DMS) format: e.g., "34°03'30\" N"
-    match = re.match(r"(\d+)°(\d+)'(\d+(?:\.\d*)?)\"", cleaned_value)
+    # Check for Degrees, Minutes, and Seconds (DMS) format: "34°03'30" N"
+    match = re.match(r"^(\d+)°(\d+)'(\d+(?:\.\d*)?)\"", cleaned_value)
     if match:
-        degrees = float(match.group(1))
-        minutes = float(match.group(2)) / 60  # Convert minutes to decimal
-        seconds = float(match.group(3)) / 3600  # Convert seconds to decimal
-        return round((degrees + minutes + seconds) * multiplier, 6)  # Round to 6 decimals
+        degrees = int(match.group(1))
+        minutes = int(match.group(2))
+        seconds = float(match.group(3))
 
-    # Check for Degrees and Minutes (DM) format: e.g., "34°03' N"
-    match = re.match(r"(\d+)°(\d+(?:\.\d*)?)'", cleaned_value)
+        # Validate ranges
+        if not (0 <= minutes < 60 and 0 <= seconds < 60):
+            return None
+
+        decimal_degrees = degrees + (minutes / 60) + (seconds / 3600)
+        return round(decimal_degrees * multiplier, 6)
+
+    # Check for Degrees and Minutes (DM) format: "34°03' N"
+    match = re.match(r"^(\d+)°(\d+(?:\.\d*)?)'", cleaned_value)
     if match:
-        degrees = float(match.group(1))
-        minutes = float(match.group(2)) / 60
-        return round((degrees + minutes) * multiplier, 6)
+        degrees = int(match.group(1))
+        minutes = float(match.group(2))
 
-    # Otherwise, handle plain decimal degrees (DD)
+        # Validate ranges
+        if not (0 <= minutes < 60):
+            return None
+
+        decimal_degrees = degrees + (minutes / 60)
+        return round(decimal_degrees * multiplier, 6)
+
+    # Handle plain decimal degrees (DD)
     try:
         numeric_value = float(re.sub(r"[^\d.\-]", "", cleaned_value))
+        
+        # Validate latitude and longitude ranges
+        if abs(numeric_value) > 180:  # Invalid if greater than 180
+            return None
+
         return round(numeric_value * multiplier, 6)
     except ValueError:
         return None

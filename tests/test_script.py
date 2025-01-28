@@ -14,8 +14,9 @@ def test_haversine():
     assert math.isclose(calculated_distance, expected_distance_km, rel_tol=0.05)
 
 
+
 @pytest.mark.parametrize("input_value, expected", [
-    #Decimal Degrees (DD) Format
+    # Decimal Degrees (DD)
     ("40.7128 N", 40.7128),
     ("74.006 W", -74.006),
     ("-45.67", -45.67),
@@ -24,25 +25,25 @@ def test_haversine():
     ("180", 180.0),
     ("-180", -180.0),
     
-    #Degrees and Minutes (DM) Format
-    ("34°03' N", 34.05),  # 3' minutes → 3/60 = 0.05
-    ("118°14' W", -118.2333),  # 14' minutes → 14/60 = 0.2333
-    ("0°30' N", 0.5),  # 30' minutes → 30/60 = 0.5
-    ("12°45' S", -12.75),  # 45' minutes → 45/60 = 0.75
+    # Degrees and Minutes (DM)
+    ("34°03' N", 34.05),  # 3' → 3/60 = 0.05
+    ("118°14' W", -118.233333),  # 14' → 14/60 = 0.2333
+    ("0°30' N", 0.5),  # 30' → 30/60 = 0.5
+    ("12°45' S", -12.75),  # 45' → 45/60 = 0.75
 
-    #Degrees, Minutes, and Seconds (DMS) Format
-    ("34°03'30\" N", 34.0583),  # 30" seconds → 30/3600 = 0.0083
-    ("118°14'45\" W", -118.2458),  # 45" seconds → 45/3600 = 0.0125
-    ("0°30'30\" N", 0.5083),  # 30'30" → (30/60) + (30/3600)
-    ("89°59'59\" S", -89.9997),  # 59'59" → (59/60) + (59/3600)
+    # Degrees, Minutes, and Seconds (DMS)
+    ("34°03'30\" N", 34.058333),  # 30" → 30/3600 = 0.0083
+    ("118°14'45\" W", -118.245833),  # 45" → 45/3600 = 0.0125
+    ("0°30'30\" N", 0.508333),  # 30'30" → (30/60) + (30/3600)
+    ("89°59'59\" S", -89.999722),  # 59'59" → (59/60) + (59/3600)
     
-    #Edge Cases
+    # Edge Cases
     ("00°00'00\" N", 0.0),  # Exactly 0 degrees
-    ("00°00'01\" S", -0.0003),  # One second south
+    ("00°00'01\" S", -0.000278),  # One second south
     ("180°00'00\" E", 180.0),  # Maximum longitude
     ("180°00'00\" W", -180.0),  # Minimum longitude
 
-    #Invalid Inputs (Should return `None`)
+    # Invalid Inputs (Should return None)
     ("INVALID", None),
     ("N 40.7128", None),  # Incorrect format
     ("34°61' N", None),  # Invalid minutes (>60)
