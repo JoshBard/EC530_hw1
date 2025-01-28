@@ -24,7 +24,10 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas pytest
+          pip install pytest pandas
+
+      - name: Add Root to Python Path
+        run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
 
       - name: Run Tests
-        run: pytest tests/test_script.py
+        run: pytest tests/
