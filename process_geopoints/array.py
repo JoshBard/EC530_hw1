@@ -36,33 +36,41 @@ import re
 
 def clean_coordinate(value):
     """
-    Cleans a latitude or longitude value by:
-    - Removing degree symbols and extra text (e.g., 'N', 'S', 'E', 'W', '°', "'").
-    - Converting directional coordinates (e.g., '34°03' N' -> 34.03, '118°14' W' -> -118.14).
-    - Handling degree-minute format accurately.
+    Cleans and converts a coordinate (latitude or longitude) from various formats:
+    - Supports Decimal Degrees (DD) → "40.7128 N" → 40.7128
+    - Supports Degrees and Minutes (DM) → "34°03' N" → 34.05
+    - Supports Degrees, Minutes, and Seconds (DMS) → "34°03'30\" N" → 34.0583
     """
     if not isinstance(value, str):
         return None
 
     value = value.strip().upper()
 
-    # Determine the multiplier based on direction (N/E = +1, S/W = -1)
+    # Determine multiplier for direction
     multiplier = -1 if 'S' in value or 'W' in value else 1
 
-    # Remove all non-numeric characters except '.', '-', '°', "'"
-    cleaned_value = re.sub(r"[^0-9.\-°']", " ", value).strip()
+    # Remove all non-numeric characters except '.', '-', '°', "'", and '"'
+    cleaned_value = re.sub(r"[^0-9.\-°'\"]", " ", value).strip()
 
-    # Check for degree-minute format: e.g., "34°03' N"
+    # Check for Degrees, Minutes, Seconds (DMS) format: e.g., "34°03'30\" N"
+    match = re.match(r"(\d+)°(\d+)'(\d+(?:\.\d*)?)\"", cleaned_value)
+    if match:
+        degrees = float(match.group(1))
+        minutes = float(match.group(2)) / 60  # Convert minutes to decimal
+        seconds = float(match.group(3)) / 3600  # Convert seconds to decimal
+        return round((degrees + minutes + seconds) * multiplier, 6)  # Round to 6 decimals
+
+    # Check for Degrees and Minutes (DM) format: e.g., "34°03' N"
     match = re.match(r"(\d+)°(\d+(?:\.\d*)?)'", cleaned_value)
     if match:
         degrees = float(match.group(1))
-        minutes = float(match.group(2)) / 60  # Convert minutes to decimal degrees
-        return round((degrees + minutes) * multiplier, 2)  # Explicit rounding
+        minutes = float(match.group(2)) / 60
+        return round((degrees + minutes) * multiplier, 6)
 
-    # Otherwise, just extract the number and apply multiplier
+    # Otherwise, handle plain decimal degrees (DD)
     try:
         numeric_value = float(re.sub(r"[^\d.\-]", "", cleaned_value))
-        return round(numeric_value * multiplier, 2)  # Explicit rounding
+        return round(numeric_value * multiplier, 6)
     except ValueError:
         return None
     
