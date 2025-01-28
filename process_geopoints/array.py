@@ -3,10 +3,10 @@ import math
 import os
 import re
 
-# Haversine function to calculate the distance between two points
+# Haversine function to calculate the distance between two points helped by ChatGPT
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate the great-circle distance between two points on the Earth."""
-    R = 6371.0  # Earth radius in km
+    R = 6371.0
     lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
     dlat = lat2 - lat1
     dlon = lon2 - lon1
@@ -17,6 +17,22 @@ def haversine(lat1, lon1, lat2, lon2):
 def find_closest_point(start, options):
     """Find the closest latitude/longitude match using Haversine distance."""
     return min(options, key=lambda option: haversine(start["latitude"], start["longitude"], option["latitude"], option["longitude"]))
+
+def clean_coordinate(value):
+    if not isinstance(value, str):
+        return None
+
+    value = re.sub(r"[^\d.\-NSEW°']", "", value).strip()
+    multiplier = -1 if "S" in value or "W" in value else 1
+    value = re.sub(r"[^\d.]", "", value)
+
+    try:
+        return float(value) * multiplier
+    except ValueError:
+        return None
+
+import pandas as pd
+import re
 
 def clean_coordinate(value):
     """
@@ -37,50 +53,38 @@ def clean_coordinate(value):
         return None
 
 def clean_csv(input_file):
-    """
-    Cleans a CSV file by:
-    - Detecting 'code', 'latitude', and 'longitude' columns dynamically.
-    - Removing rows with missing 'code', 'latitude', or 'longitude' values.
-    - Cleaning messy latitude/longitude formats.
-    - Ensuring latitude is between -90 and 90, and longitude is between -180 and 180.
-    - Overwriting the original file with cleaned data.
-    """
     df = pd.read_csv(input_file, dtype=str)
+
+    # Standardize column names
     df.columns = [col.strip().lower() for col in df.columns]
 
-    code_cols = ["code", "name", "identifier", "id"]
+    # Identify latitude and longitude columns
     lat_cols = ["latitude", "lat", "geo_lat", "latitud"]
     lon_cols = ["longitude", "long", "lng", "geo_lon", "lon"]
 
-    code_col = next((col for col in df.columns if col in code_cols), None)
     lat_col = next((col for col in df.columns if col in lat_cols), None)
     lon_col = next((col for col in df.columns if col in lon_cols), None)
-
-    if not code_col:
-        first_col = df.columns[0]
-        if first_col not in lat_cols + lon_cols:
-            code_col = first_col
-        else:
-            print("ERROR: No valid identifier column found.")
-            return None
 
     if not lat_col or not lon_col:
         print("ERROR: Missing necessary latitude/longitude columns.")
         return None
 
-    df = df[[code_col, lat_col, lon_col]].rename(columns={code_col: "code", lat_col: "latitude", lon_col: "longitude"})
+    # Rename latitude and longitude columns for consistency but keep all columns
+    df = df.rename(columns={lat_col: "latitude", lon_col: "longitude"})
 
-    df = df.dropna(subset=["code", "latitude", "longitude"])
-
+    # Convert and clean latitude/longitude while keeping all other columns
     df["latitude"] = df["latitude"].apply(clean_coordinate)
     df["longitude"] = df["longitude"].apply(clean_coordinate)
 
+    # Drop rows with invalid lat/lon values but keep all columns
     df = df.dropna(subset=["latitude", "longitude"])
     df = df[(df["latitude"].between(-90, 90)) & (df["longitude"].between(-180, 180))]
 
+    # Save the cleaned CSV, keeping all original columns
     df.to_csv(input_file, index=False)
     print(f"Cleaned CSV saved (replacing original): {input_file}")
     return input_file
+
 
 def process_and_save_matches(your_points_file, option_points_file, output_file):
     """ Read CSVs, find closest matches, and save results. """
@@ -91,9 +95,9 @@ def process_and_save_matches(your_points_file, option_points_file, output_file):
     your_points = pd.read_csv(your_points_file)
     option_points = pd.read_csv(option_points_file)
 
-    required_cols = ["code", "latitude", "longitude"]
+    required_cols = ["latitude", "longitude"]
     if not all(col in your_points.columns for col in required_cols) or not all(col in option_points.columns for col in required_cols):
-        raise ValueError("Missing required columns (code, latitude, longitude) in one or both files.")
+        raise ValueError("Missing required columns (latitude, longitude) in one or both files.")
 
     your_points["latitude"] = pd.to_numeric(your_points["latitude"], errors="coerce")
     your_points["longitude"] = pd.to_numeric(your_points["longitude"], errors="coerce")
@@ -104,17 +108,19 @@ def process_and_save_matches(your_points_file, option_points_file, output_file):
     option_points = option_points.dropna(subset=["latitude", "longitude"])
 
     matched_pairs = []
+
     for _, your_point in your_points.iterrows():
         closest_option = find_closest_point(your_point, option_points.to_dict(orient="records"))
-        matched_pairs.append({
-            "your_code": your_point["code"],
-            "your_latitude": your_point["latitude"],
-            "your_longitude": your_point["longitude"],
-            "matched_code": closest_option["code"],
-            "matched_latitude": closest_option["latitude"],
-            "matched_longitude": closest_option["longitude"],
-            "distance_km": round(haversine(your_point["latitude"], your_point["longitude"], closest_option["latitude"], closest_option["longitude"]), 2)
+
+        # Combine all columns from both dataframes
+        matched_entry = {
+            f"your_{col}": your_point[col] for col in your_points.columns
+        }
+        matched_entry.update({
+            f"matched_{col}": closest_option[col] for col in option_points.columns
         })
+
+        matched_pairs.append(matched_entry)
 
     output_df = pd.DataFrame(matched_pairs)
     output_df.to_csv(output_file, index=False)
