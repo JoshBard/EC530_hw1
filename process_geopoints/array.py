@@ -34,24 +34,39 @@ def clean_coordinate(value):
 import pandas as pd
 import re
 
+
 def clean_coordinate(value):
     """
     Cleans a latitude or longitude value by:
-    - Removing degree symbols and extra text (e.g., 'N', 'S', 'E', 'W', 'degrees').
+    - Removing degree symbols and extra text (e.g., 'N', 'S', 'E', 'W', '°', "'").
     - Converting directional coordinates (e.g., '40.7128 N' -> 40.7128, '74.006 W' -> -74.006).
+    - Handling degree-minute format (e.g., '34°03' N' -> 34.05, '118°14' W' -> -118.2333).
     """
     if not isinstance(value, str):
         return None
 
-    value = re.sub(r"[^\d.\-NSEW°']", "", value).strip()
-    multiplier = -1 if "S" in value or "W" in value else 1
-    value = re.sub(r"[^\d.]", "", value)
+    value = value.strip().upper()
 
+    # Determine the multiplier based on direction (N/E = +1, S/W = -1)
+    multiplier = -1 if 'S' in value or 'W' in value else 1
+
+    # Remove all non-numeric characters except '.', '-', '°', "'"
+    cleaned_value = re.sub(r"[^0-9.\-°']", " ", value).strip()
+
+    # Check for degree-minute format: e.g., "34°03' N"
+    match = re.match(r"(\d+)°(\d+(?:\.\d*)?)'", cleaned_value)
+    if match:
+        degrees = float(match.group(1))
+        minutes = float(match.group(2)) / 60  # Convert minutes to decimal degrees
+        return round((degrees + minutes) * multiplier, 6)
+
+    # Otherwise, just extract the number and apply multiplier
     try:
-        return float(value) * multiplier
+        numeric_value = float(re.sub(r"[^\d.\-]", "", cleaned_value))
+        return numeric_value * multiplier
     except ValueError:
         return None
-
+    
 def clean_csv(input_file):
     df = pd.read_csv(input_file, dtype=str)
 
