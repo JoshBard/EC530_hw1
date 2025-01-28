@@ -5,7 +5,6 @@ import re
 
 # Haversine function to calculate the distance between two points helped by ChatGPT
 def haversine(lat1, lon1, lat2, lon2):
-    """Calculate the great-circle distance between two points on the Earth."""
     R = 6371.0
     lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
     dlat = lat2 - lat1
@@ -15,24 +14,7 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c
 
 def find_closest_point(start, options):
-    """Find the closest latitude/longitude match using Haversine distance."""
     return min(options, key=lambda option: haversine(start["latitude"], start["longitude"], option["latitude"], option["longitude"]))
-
-def clean_coordinate(value):
-    if not isinstance(value, str):
-        return None
-
-    value = re.sub(r"[^\d.\-NSEW°']", "", value).strip()
-    multiplier = -1 if "S" in value or "W" in value else 1
-    value = re.sub(r"[^\d.]", "", value)
-
-    try:
-        return float(value) * multiplier
-    except ValueError:
-        return None
-
-import pandas as pd
-import re
 
 def clean_coordinate(value):
     """
