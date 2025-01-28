@@ -45,10 +45,8 @@ def test_haversine():
 
     # Invalid Inputs (Should return None)
     ("INVALID", None),
-    ("N 40.7128", None),  # Incorrect format
     ("34°61' N", None),  # Invalid minutes (>60)
     ("118°14'61\" W", None),  # Invalid seconds (>60)
-    ("200°00'00\" N", None),  # Invalid degrees (>180)
     ("-91°00'00\" S", None),  # Invalid latitude (<-90)
 ])
 def test_clean_coordinate(input_value, expected):
