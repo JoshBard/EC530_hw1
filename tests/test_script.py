@@ -13,8 +13,6 @@ def test_haversine():
     
     assert math.isclose(calculated_distance, expected_distance_km, rel_tol=0.05)
 
-
-
 @pytest.mark.parametrize("input_value, expected", [
     # Decimal Degrees (DD)
     ("40.7128 N", 40.7128),

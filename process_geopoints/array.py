@@ -16,6 +16,7 @@ def haversine(lat1, lon1, lat2, lon2):
 def find_closest_point(start, options):
     return min(options, key=lambda option: haversine(start["latitude"], start["longitude"], option["latitude"], option["longitude"]))
 
+# Parsing functions, got some help from ChatGPT on these as well
 def clean_coordinate(value):
     """
     Cleans and converts a coordinate (latitude or longitude) from various formats:
@@ -149,6 +150,7 @@ def process_and_save_matches(your_points_file, option_points_file, output_file):
     print(f"Matched pairs saved to {output_file}")
     return output_file
 
+# Prompts the user to create or upload a .csv
 if __name__ == "__main__":
     print("Please place your CSV files in the following directories:")
     print(" - Your points CSV in: uploads/your_points/")
