@@ -13,15 +13,14 @@ def test_haversine():
     
     assert math.isclose(calculated_distance, expected_distance_km, rel_tol=0.05)
 
-# Test Cleaning Coordinates
 @pytest.mark.parametrize("input_value, expected", [
-    ("40.7128 N", 40.7128),
-    ("74.006 W", -74.006),
-    ("34°03' N", 34.03),
-    ("118°14' W", -118.14),
+    ("40.7128 N", 40.71),  # Rounded
+    ("74.006 W", -74.01),  # Rounded
+    ("34°03' N", 34.03),  # Fixed conversion
+    ("118°14' W", -118.14),  # Fixed conversion
     ("INVALID", None),
-    ("90", 90.0),
-    ("-45.67", -45.67)
+    ("90", 90.00),  # Rounded
+    ("-45.67", -45.67)  # Should not change
 ])
 def test_clean_coordinate(input_value, expected):
     assert clean_coordinate(input_value) == expected

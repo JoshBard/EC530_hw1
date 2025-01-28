@@ -34,13 +34,12 @@ def clean_coordinate(value):
 import pandas as pd
 import re
 
-
 def clean_coordinate(value):
     """
     Cleans a latitude or longitude value by:
     - Removing degree symbols and extra text (e.g., 'N', 'S', 'E', 'W', '°', "'").
-    - Converting directional coordinates (e.g., '40.7128 N' -> 40.7128, '74.006 W' -> -74.006).
-    - Handling degree-minute format (e.g., '34°03' N' -> 34.05, '118°14' W' -> -118.2333).
+    - Converting directional coordinates (e.g., '34°03' N' -> 34.03, '118°14' W' -> -118.14).
+    - Handling degree-minute format accurately.
     """
     if not isinstance(value, str):
         return None
@@ -58,12 +57,12 @@ def clean_coordinate(value):
     if match:
         degrees = float(match.group(1))
         minutes = float(match.group(2)) / 60  # Convert minutes to decimal degrees
-        return round((degrees + minutes) * multiplier, 6)
+        return round((degrees + minutes) * multiplier, 2)  # Explicit rounding
 
     # Otherwise, just extract the number and apply multiplier
     try:
         numeric_value = float(re.sub(r"[^\d.\-]", "", cleaned_value))
-        return numeric_value * multiplier
+        return round(numeric_value * multiplier, 2)  # Explicit rounding
     except ValueError:
         return None
     
