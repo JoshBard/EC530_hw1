@@ -28,10 +28,14 @@ def clean_coordinate(value):
 
     value = value.strip().upper()
 
+    # Ensure the format is correct
+    if not re.match(r"^\d+°?\d*'?(\d*\"?)?\s?[NSEW]?$", value):
+        return None  # Reject invalid formats like "N 40.7128"
+
     # Determine multiplier for direction (N/E = positive, S/W = negative)
     multiplier = -1 if 'S' in value or 'W' in value else 1
 
-    # Ensure only valid characters are present
+    # Remove non-numeric characters except '.', '-', '°', "'", and '"'
     cleaned_value = re.sub(r"[^0-9.\-°'\"]", " ", value).strip()
 
     # Check for Degrees, Minutes, and Seconds (DMS) format: "34°03'30" N"
@@ -42,11 +46,17 @@ def clean_coordinate(value):
         seconds = float(match.group(3))
 
         # Validate ranges
-        if not (0 <= minutes < 60 and 0 <= seconds < 60):
-            return None
+        if not (0 <= minutes < 60 and 0 <= seconds < 60) or degrees > 180:
+            return None  # Reject invalid values
 
         decimal_degrees = degrees + (minutes / 60) + (seconds / 3600)
-        return round(decimal_degrees * multiplier, 6)
+        decimal_degrees *= multiplier
+
+        # Ensure valid latitude and longitude ranges
+        if abs(decimal_degrees) > 180 or (abs(decimal_degrees) > 90 and 'N' in value or 'S' in value):
+            return None
+
+        return round(decimal_degrees, 6)
 
     # Check for Degrees and Minutes (DM) format: "34°03' N"
     match = re.match(r"^(\d+)°(\d+(?:\.\d*)?)'", cleaned_value)
@@ -55,18 +65,24 @@ def clean_coordinate(value):
         minutes = float(match.group(2))
 
         # Validate ranges
-        if not (0 <= minutes < 60):
+        if not (0 <= minutes < 60) or degrees > 180:
             return None
 
         decimal_degrees = degrees + (minutes / 60)
-        return round(decimal_degrees * multiplier, 6)
+        decimal_degrees *= multiplier
+
+        # Ensure valid latitude and longitude ranges
+        if abs(decimal_degrees) > 180 or (abs(decimal_degrees) > 90 and 'N' in value or 'S' in value):
+            return None
+
+        return round(decimal_degrees, 6)
 
     # Handle plain decimal degrees (DD)
     try:
         numeric_value = float(re.sub(r"[^\d.\-]", "", cleaned_value))
         
-        # Validate latitude and longitude ranges
-        if abs(numeric_value) > 180:  # Invalid if greater than 180
+        # Ensure valid latitude and longitude ranges
+        if abs(numeric_value) > 180 or (abs(numeric_value) > 90 and 'N' in value or 'S' in value):
             return None
 
         return round(numeric_value * multiplier, 6)
