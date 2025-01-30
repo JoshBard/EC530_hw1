@@ -1,7 +1,9 @@
 import pytest
 import math
 import pandas as pd
-from process_geopoints.array import haversine, clean_coordinate, find_closest_point
+from process_geopoints.main import haversine, clean_coordinate, find_closest_point
+
+# Testing file from ChatGPT
 
 # Test Haversine Distance Calculation
 def test_haversine():
